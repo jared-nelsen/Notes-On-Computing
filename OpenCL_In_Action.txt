@@ -1,0 +1,456 @@
+
+OpenCL In Action - Matthew Scarpino
+-----------------------------------
+
+The three main advantages of OpenCL are:
+1. Portability
+2. Standardized Vector Processing
+3. Parallel Programming
+
+Portability
+-----------
+Vendors provide libraries for OpenCL to run on their devices so writing your code
+on one should translate to another. Secondly, this means that you may unify differing
+hardware in the same system. Maybe you have a GPU, an acellerator, and a CPU.
+
+Standardized Vector Processing
+------------------------------
+
+The term vector can be used in three different ways in the context of this book:
+
+1. Physical or geometric vector: An entity with a magnitude and direction. In graphics,
+   vectors are used to identify directions.
+2. Mathematical Vector: An ordered, one dimensional collection of elements.
+3. Computational Vector: A data structure that contains multiple elements of the same
+   data type. During a vector operation, each element is operated on in the same clock
+   cycle. This is what is referred to when a processor operates on more than one element
+   at a time.
+
+Parallel Programming
+--------------------
+Parallel programming assigns computational tasks to multiple processing elements to be
+operated on at the same time. In OpenCL, these tasks are called Kernels.
+
+Kernel - A specially coded function that is intended to be executed by one or more
+         devices.
+
+Host Application - An application that sends kernels to devices to be executed. The host
+                   associates the kernel with argument data and dispatches in to a
+                   structure called the command queue.
+
+Context - A container that the host application uses to manage their connected devices.
+
+Program - A function that resides in a Kernel container.
+
+Command Queue - The mechanism through which the host tells devices what to do. When a
+                kernel is enqueued, the device will execute the corresponding function.
+
+Task Parallelism - The property whereby an OpenCL application can configure different
+                   devices to perform different tasks and each task can operate on
+                   different data.
+
+Platform - A data structure that identifies a vendor's implementation of OpenCL.
+
+The system of host to device parallelism can be imagined as a card game where the
+dealer is the host, the devices are the players, and the cards are the kernels.
+
+------------------------------------------------------------------------------------------
+Chapter 2 - Host Progamming
+------------------------------------------------------------------------------------------
+Covers
+------
+1. Understanding the six basic OpenCL data structures
+2. Create and examining the data structures in code
+3. Combining the data structures to send kernels to a device
+
+The first step to any OpenCL application is coding the host application. But to do this
+you must be familiar with the six basic data structures:
+
+1. Platform
+2. Device
+3. Context
+4. Program
+5. Kernel
+6. Command Queues
+
+For each data structure, there are two types of functions:
+1. Create the data structure
+2. Provide information about the structure after it has been created.
+
+Primitive Data Types
+--------------------
+The basic primitives in OpenCL are shared with C and C++.
+To see them you can look in CL/cl_platform.h
+
+Accessing Platforms
+-------------------
+Sometimes you dont know who or what hardware is running your application. To get around
+this you can use the cl_platform_id data structure.
+
+Creating Platform Structures
+----------------------------
+Each cl_platform_id structure represents a different OpenCL implementation installed on
+the host. If you've installed two SDKs, then your code will detect two of these.
+
+Working with platforms is a two step process:
+1. Allocate memory for one or more cl_platform_id structures
+2. Call clGetPlatformIDs to initialize these structures
+
+Here is the function signature:
+
+cl_int clGetPlatformIDs(clu_uint num_entries, cl_platform_id *platforms, cl_uint *num_platforms);
+
+       1. This function does not return cl_platform_id structures
+       2. It places the cl_platform_id structures in the memory referenced by platforms.
+       3. It places the number of available platforms in the memory referenced by num_platforms
+
+       - A return value of 0 indicates success in detecting one or more platforms. Negative
+         values indicate failure.
+
+       - num_entries : Identifies the max number of platforms that you're interested in detecting
+       - num_platforms : The number of platforms detected on the host
+
+Obtaining Platform Information
+------------------------------
+
+You can use this function to get info about a platform:
+
+cl_int clGetPlatformInfo(cl_platform_id platform, cl_platform_info param_name,
+                         size_t param_value_size, void *param_value,
+                         size_t *param_value_size_ret)
+
+Here is an instance of that function that stuffs info about a platform's vendor into a 40 element
+char array.
+
+char pform_vendor[40];
+
+clGetPlatformInfo(platforms[0], CL_PLATFORM_VENDOR, sizeof(pform_vendor), &pform_vendor, NULL)
+
+Once you've accessed a vendor's platform, you can access every connected device provided by the
+vendor.
+
+Creating Device Structures
+--------------------------
+
+Before you send a kernel to a device, you need to construct a cl_device_id to represent the
+device. You do this using clGetDeviceIDs. It populates the cl_device_id array with structures
+corresponding to OpenCL devices:
+
+Here is its signature:
+
+cl_int clGetDeviceIDs(cl_platform_id platform, cl_devicea_type device_type, cl_uint num_entries,
+                      cl_device_type device_type, cl_uint num_entries, cl_device_id *devices,
+                      cl_uint *num_devices)
+
+By setting either of the last two arguments to NULL, one may determine the number of connected
+devices or to populate a cl_device_id array.
+
+This example call populates an array with a max of 3 GPU devices associated with the plat platform:
+
+clGetDeviceIDs(plat, CL_DEVICE_TYPE_GPU, 3, devs, NULL);
+
+Obtaining Device Information
+----------------------------
+
+This function provices information about the device id passed to it:
+
+cl_int clGetDeviceInfo(cl_device_id device, cl_device_info param_name, size_t param_value_size,
+                       void *param_value, size_t *param_value_size_ret);
+
+The enumerated type of this function has a vast number of parameters that can tell you about the
+properties of the device such as byte order, memory size, and cache structure.
+
+Here are some of them:
+
+1. CL_DEVICE_NAME
+2. CL_DEVICE_VENDOR
+3. CL_DEVICE_EXTENSIONS
+4. CL_DEVICE_GLOBAL_MEM_SIZE
+5. CL_DEVICE_ADDRESS_BITS
+...
+
+Obtaining device inforation is useful because it can help you optimize your kernels to take
+advantage of the features of the device.
+
+Managing Devices with Contexts p.25
+-----------------------------------
+Contexts allow one to manage multiple devices.
+
+Contexts make it possible to create command queues, the structure that allows hosts to send
+kernels to devices.
+
+The devices in a context must be provided by the same platform.
+
+Contexts are especially important when you use OpenCL to process graphics.
+
+Contexts can be created via two functions:
+
+Function A:
+cl_context clCreateContext(const cl_context_properties *properties, cl_uint num_devices
+                           const cl_device_id *devices, (void CL_CALLBACK *notify_func) (...),
+                           void *user_data, cl_int *error);
+
+Function B:
+cl_context clCreateContextFromType(const cl_context_properties *properties,
+                                   cl_device_type device_type
+                                   (void CL_CALLBACK *notify_func(...),
+                                   void *user_data, cl_int *error));
+
+Function A creates a context by explicitly identifying devices.
+Function B forms a context containing all devices of a given type.
+
+Function B is helpful if you would like to create a context without accessing platforms or
+devices.
+
+The following code creates a context containing only GPU devices:
+
+cl_context context = clCreateContextFromType(context_props, CL_DEVICE_TYPE_GPU, NULL,
+                                             NULL, &err);
+
+Obtaining Context Information
+-----------------------------
+
+The clGetContextInfo provides info about a context:
+
+clGetContextInfo(cl_context context, cl_context_info param_name, size_t param_value_size,
+                 void* param_value_size, void* param_value, size_t *param_value_size_ret);
+
+param_name must take one of the values defined by the cl_context_info enumerated type:
+
+1. CL_CONTEXT_NUM_DEVICES
+2. CL_CONTEXT_DEVICES
+3. CL_CONTEXT_PROPERTIES
+4. CL_CONTEXT_REFERENCE_COUNT
+5. CL_CONTEXT_D3D10....
+
+        *See page 28 for reference
+
+Storing Device Code in Programs
+-------------------------------
+
+In OpenCL, a program is represented by a cl_program data structure. The next section
+explains how to create and build a cl_program so that its kernels can be deployed to
+devices.
+
+Creating Programs
+-----------------
+
+There are two functions that create new programs in OpenCL:
+1. clCreateProgramWithSource
+2. clCreateProgramWithBinary
+
+Both convert code into a cl_program data structure but neither accepts filenames or
+handles. 
+
+clCreateProgramWithSource expects the buffers to contain code in text form:
+
+clCreateProgramWithSource(cl_context context, cl_uint src_num, const char **src_strings,
+                          const size_t *src_sizes, cl_int *err_code);
+
+Note that you can create an opencl program from multiple text files but that is an
+advanced topic.
+
+See P.31 for code to create a program from an OpenCl source file.
+
+Building Programs
+-----------------
+The functions inside an openCl program rely on OpenCL specific functions and data
+structures so every program must be compiled using an OpenCL specific compiler.
+
+Every OpenCL compiler must be accessible through the function clBuildProgram function:
+
+clBuildProgram(cl_program program, cl_uint num_devices, const cl_device_id *devices,
+               const char *options, (void CL_CALLBACK *notify_func) (...), void *user_data);
+
+See p.32 for a list of compiler flags.
+
+Obtaining Program Information
+-----------------------------
+Once you've created and compiled a program, you can access information related to it by
+calling clGetProgramInfo and clGetProgramBuildInfo
+
+Signature:
+
+clGetProgramInfo(cl_program program, cl_program_info param_name, size_t param_value_size,
+                 void *param_value, size_t *param_value_size_ret);
+
+See p.33 for an enumerated type set that can be used to manipulate this call. It has quite
+a few.
+
+clGetProgramBuildInfo is a vital function! Its the only way to find out what happened during
+the programs build process:
+
+clGetProgramBuildInfo(cl_program program, cl_device_id device, cl_program_build_info param_name,
+                      size_t param_value_size, void *param_value, size_t *param_value_size_ret);
+
+You can get these pieces of info from the device:
+1. CL_PROGRAM_BUILD_STATUS
+2. CL_PROGRAM_BUILD_OPTIONS
+3. CL_PROGRAM_BUILD_LOG
+
+        *See p. 34 for more info
+
+Packaging Functions in Kernels
+------------------------------
+
+After you've compiled and linked a program, you can package its functions into data structures
+called kernels. Kernels are deployable to command queues which dispatch them to devices. Each
+kernel is represented by a cl_kernel data structure.
+
+Creating Kernels (Not addressing arguments)
+-------------------------------------------
+There are two functions that construct cl_kernel structures from a program.
+
+clCreateKernelsInProgram creates a kernel for every function in the program.
+
+clCreateKernelsInProgram(cl_program program, cl_uint num_kernels, cl_kernel *kernels,
+                         cl_uint *num_kernels_ret);
+
+When the function completes, the new cl_kernels are placed in the kernels array, and
+num_kernels_ret identifies how many kernels are available.
+
+If you'd rather create a single kernel, you can use clCreateKernel. This function requires
+that you know the name of the function from which the kernel is to be created.
+
+clCreateKernel(cl_program program, const char *kernel_name, cl_int *error);
+
+This function creates a single cl_kernel.
+
+Obtaining Kernel Information
+----------------------------
+Once you've created a kernel, you may want to know which function it representsand which
+program it belongs to:
+
+clGetKernelInfo(cl_kernel kernel, cl_kernel_info param_name, size_t param_value_size,
+                void *param_value, size_t *param_value_size_ret);
+
+
+                *See p.37 for a list of enumerated types that you can use to get the kernel
+                 info.
+
+Collecting Kernels in a Command Queue
+-------------------------------------
+
+Once you create a command queue, you can submit the kernels to the queue and they will be
+sent to the device associated with the queue. Kernels are only one type of command that
+can be sent to a device through a command queue. There are commands that read, write, and
+copy data to and from the host. Keep in mind that hosts send commands to devices and not
+the other way around.
+
+Creating Command Queues
+-----------------------
+Command Queues are represented by cl_command_queue structures. 
+
+Create a new command queue with:
+
+clCreateCommandQueue(cl_context context, cl_device_id devices, cl_command_queue_properties
+                     properties, cl_int *err);
+
+cl_command_queue_properties is a parameter that needs to be set to NULL or one of these
+enumerated types:
+
+- CL_QUEUE_PROFILING_ENABLE - Enables profiling events which are timing events
+- CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLED - Allow the target device to process kernels out
+                                            or order
+
+Enqueueing Kernel Execution Commands
+------------------------------------
+OpenCL has many functions that start with clEnqueue which dipatch commands to devices
+through a command queue.
+
+The simplest of them is:
+
+clEnqueueTask(cl_command_queue queue, cl_kernel kernel, cl_uint num_events, const cl_event
+              *wait_list, cl_event *event)
+
+Chapter 2 Summary
+-----------------
+1. Host applications create one or more cl_platform_id structures to represent a vendor's
+   implementation
+2. Using platforms, the application finds connected devices which are represented by a
+   cl_device_id structure.
+3. The application can find information about these devices by calling clGetDeviceInfo and
+   once it has determined which devices to target it combines them within a cl_context.
+4. The application reads in source code or binary code that contains kernel functions.
+5. It uses this code to form a cl_program and builds it with clBuildProgram. This compiles
+   the code for each device in the context. Then the host application creates cl_kernels
+   for the functions contained inside.
+6. The host application creates cl_command_queues to enable communication with the device.
+7. The host application dispatches commands to these cl_command_queues to tell the devices
+   to execute them.
+
+------------------------------------------------------------------------------------------
+Chapter 3 - Host Progamming: Data Transfer and Partitioning
+------------------------------------------------------------------------------------------
+
+Covers:
+1. Creating memory objects to serve as kernel arguments
+2. Commands that transfer data between the host and a device
+3. Partitioning kernel execution using work-items and work-groups
+
+Devices need more than just kernels to do their jobs - they need data, too. 
+
+If you want a device to perform a nontrivial computing task, you have to provice at least
+three pieces of information:
+
+1. Instructions
+2. A buffer containing the data to be processed
+3. The buffer where the processed data should be stored.
+
+Setting Kernel Arguments
+------------------------
+
+Set kernel arguments with:
+
+clSetKernelArg(cl_kernel kernel, cl_uint index, size_t size, const void *value);
+
+index indicates the order of the kernel arguments starting at 0.
+
+*value points to the data that will be transferred to the kernel function. It can
+take the form of a:
+
+1. Pointer to primitive data - Transfers simple primitives to the device
+2. Pointer to a memory object - Transfers significant or complex data
+3. Pointer to a sampler object - Transfers an object that defines how images are read
+4. NULL - Device will reserve memory in its address space for the argument
+
+   - 1. is usually just an int or a float
+        
+                - clSetKernelArg(proc, 0, sizeof(num), &num);
+     
+   - 2. is usually a large chunk of data
+
+                - clSetKernelArg(proc, 1, sizeof(mem_obj), &mem_obj);
+
+In OpenCL, memory objects are represented by cl_mem data structures. They come in two
+types:
+
+        1. Buffer Objects
+        2. Image Objects
+
+Buffer Objects
+--------------
+Buffer objects package any type of data that doesnt involve images. These are created
+by clCreateBuffer:
+
+clCreateBuffer(cl_context, context, cl_mem_flags options, size_t size,
+               void *host_ptr, cl_int *error);
+
+This returns a cl_mem structure that wraps around the data identified by the host_ptr
+argument.
+
+The options parameter configures many of the object's characteristics:
+
+1. CL_MEM_READ_WRITE
+2. CL_MEM_WRITE_ONLY
+3. CL_MEM_READ_ONLY
+4. CL_MEM_USE_HOST_PTR
+5. CL_MEM_USE_HOST_PTR
+6. CL_MEM_COPY_HOST_PTR
+7. CL_MEM_ALLOC_HOST_PTR
+
+                * See p.45 for descriptions
+
+Allocating Buffer Objects
+-------------------------
+p.46

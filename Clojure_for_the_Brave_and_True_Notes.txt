@@ -1,0 +1,1860 @@
+Clojure for the Brave and True Notes
+------------------------------------
+
+Various
+-------
+(str "x" "Y") concatenates x and y
+
+If Statements
+-----------
+(if true
+  x
+  y) -> x
+
+(if false
+  x
+  y) -> y
+
+Do Operator
+-----------
+Evaluate multiple forms in an if
+
+(if true
+    (do x)
+    (do y)
+        ) -> x -> y if false
+
+When Operator
+-------------
+Combination of if and do without the else
+
+(when true
+      (x)
+      (y)) -> x and y
+
+nil
+---
+No value but same as logical false
+
+(nil? nil) -> true
+
+Equality
+--------
+Can be used on all native Clojure data structures
+= symbol
+
+(= 1 1) -> true
+
+Or
+-----------------
+or returns first truthy value or the last value.
+
+(or false nil "x") -> x
+
+(or false nil) -> nil
+
+And
+---
+and returns the first falsey value or the last truthy value
+
+(and x y) -> y
+
+(and x nil y) -> nil
+
+def
+---
+Binds a name to a value.
+
+(def z 1)
+user> z -> 1
+
+It is best to make functions that operate on values
+than to change values.
+
+defn
+----
+(defn yell
+      [toYell]
+      (if (= toYell "Im drowning!")
+          (println "Help")
+          (println "Run!")))
+
+(yell "Im drowning!") -> "Help"
+(yell "Its a monster") -. "Run!"
+
+Data Structures
+---------------
+All data structures are immutable.
+
+Numbers
+-------
+93 -> Integer
+1.2 -> Float
+1/5 -> Ratio
+
+Strings
+-------
+Only allows String concatenation using str function:
+
+(str "x" "y") -> "xy"
+
+Maps
+----
+Associate values with one another. Similar to dictionaries
+or hashes in other languages.
+
+Clojure has hash maps and sorted maps.
+
+Map Literals
+---------
+Map values can be of any type: Strings, numbers, vectors, functions, etc.
+{} -> Empty map
+
+{:first "Bob"
+:last "Sagget"} :: Notice that keys are indicated by ':'
+
+Keys can be associated with functions:
+
+{"toot" +} -> associating a String value with the function '+'
+
+{:name {:first "Jimmy" :last "Kowalski"}} -> A nested map
+
+(hash-map :a 1 b: 2) -> A hashed map
+
+Looking up values:
+
+--get :: gets a value for a key
+
+Of the form: (get map key)
+
+(get {:a 0 :b 2} :b) -> 1 :: get a value by key
+
+(get {:a :b {:c "ho hum"}} :b) -> {:c "ho hum"} :: Get a nested map
+
+get will return nil if the map does not contain your key although
+you can give it a default value to return if the key is not found:
+
+(get {a: 0 b: 1} :c 3) -> 3
+
+--get-in :: looks up values in nested maps
+
+Of the form: (get-in {{}} [outer-key inner-key])
+
+(get-in {:a 1 b: {:c "toot"}} [:b :c]) -> "toot"
+
+--Look up by function
+
+({:name "Jimmy"} :name) -> "Jimmy"
+
+Keywords
+--------
+Keywords can be used in several ways:
+
+--As a function (This is considered gold standard in Clojure)
+(:a {:a 1 :b 2}) is equivalent to (get {:a 1 :b 2} :a) -> 1
+
+(:a {:a 1 :b 2} 3) :: provide a default value
+
+Vectors (Faster than Lists)
+-------
+Similar to an array but can be composed of different mixed types
+
+[1 2 3]
+ 
+To reference:
+
+(get [1 2 3] 0) -> 1 :: get a value in the vector
+
+(get [1 {:a 2} 3] 1) -> {:a 2} :: Get nested data stucture
+
+(vector 1 2 3) -> [1 2 3] :: create a vector
+
+(conj [1 2 3] 4) -> [1 2 3 4] :: Add to the end of a Vector
+
+Lists 
+-----
+(Slower than Vectors in general) (get head of list is O(1))
+Use lists when manipulating first element or when writing a macro
+
+'(1 2 3) -> (1 2 3) :: Write a List literal
+
+(nth (1 2 3) 0) -> 1 :: Retrieve an element
+
+(list 1 "toot" 3) -> (1 "toot" 3) :: Create a list
+
+(conj (1 2) 3) -> (1 2 3) :: Add to list at the head (always adds there)
+
+Sets
+----
+Collections of unique values.
+We have hash sets and sorted sets.
+
+#{"toot" 20, :k} :: a hash set literal
+
+(hash-set 1 1 2 2) -> #{1 2} :: create a hash set. Note non-unique values are consolidated.
+
+(conj #{:a :b} :b) -> #{:a :b} :: add a value to the end of the set
+
+(set [2 2 3 4]) -> #{2 3 4} :: make a set from a vector
+
+(contains? #{:a :b} :a) -> True :: Check if element is present
+
+(contains? #{nil} nil) -> True
+
+(:a #{:a :b}) -> :a :: use a keyword
+(:a #{:c :b}) -> nil
+
+(get #{:a :b} :a) -> :a :: use get
+(get #{1 :x} 3) -> nil
+
+Simplicity as a Virtue
+----------------------
+Clojure encourages you to reach for the basic data structures first.
+
+"It is better to have 100 functions operate on one data structure
+than to have 10 functions operate on 10 data structures"
+
+
+Functions
+---------
+---------
+The beauty of Lisps is that you can build amazingly complex programs
+from the simplest of building blocks.
+
+Calling Functions
+-----------------
+All Clojure operations have the same syntax. Opening parenthesis,
+operator, operands, closing parenthesis.
+
+In the case of a function call, the operator is a function call:
+(+ 1 1) -> 2 where x is the '+' function
+
+We can compose weird functions using these properties:
+(or + -) -> f(x)
+(and + -) -> f(y)
+
+We can use weird functions to compose sensible ones:
+((and + -) 1 2) -> -1
+
+High Order Function : A function that can take a function and/or return a function
+
+First Class Language : You may treat functions as values
+
+The Map Function
+----------------
+Creates a new list by applying a function to each member of a collection.
+
+(inc 1) -> 2
+(map inc [1 2 3]) -> (2 3 4)
+
+*******
+Lisps allow you to create functions that generalize over PROCESSES.
+
+map allows you to generalize the application of a function over any
+collection. map is then a function in itself!
+(function function OVER membership)
+*******
+
+Clojure evaluates all functions recursively.
+(+ (inc 199) (/ 100 (- 7 2)))
+(+ 200 (/ 100 (- 7 2)))
+(+ 200 (/ 100 5))
+(+ 200 20)
+220
+
+Function Calls, Macro Calls, and Special Forms
+----------------------------------------------
+
+Special Forms: 
+
+They dont always evaluate all of their operands.
+You may not use them as arguments to functions.
+
+Defining Functions
+------------------
+Function definitions are composed of five main parts:
+-defn
+-Function name
+-A docstring to describe it (optional)
+-Parameters listed in brackets
+-A body
+
+(defn x
+      docstring in String syntax
+      [args]
+      (body))
+
+Parameters and Arity
+--------------------
+Functions can take zero and more arguments
+
+Arguments can be of any type
+
+Artity :: The number of arguments to a function
+
+Artity overloading is supported.
+
+(defn x
+      "x is a function"
+      ([a b]
+          ([a b]'s body))
+      ([a]
+          ([a]'s body)))
+
+Zero or unary arity functions are a good way to
+define default values
+
+When you provide argments to variable-arity functions they
+are treated like a list
+
+& :: rest function :: define a variable-arity argument set
+
+Define:
+(defn x
+      [& ls]
+      (some function))
+
+Call:
+(x arg1 arg2 argN)
+
+You many mix normal and rest parameters but the rest ones
+must always come last
+
+(defn x
+      [a & bs]
+      (fn(a) fn(bs)))
+
+(x a b c) -> a(a) result + bs(bc) results
+
+Destructuring
+-------------
+Lets you concisely bind names to values within a collection
+
+(defn x
+      [[a b & c]]
+      (println a)
+      (println b)
+      (println (clojure.string/join ", " c)))
+
+(x ["hello", "There", "Hi", "Timmy"]) 
+-> "Hi"
+-> "There"
+-> "Hi, Timmy"
+
+The vector in the parameters maps the names to the values in the anonymous
+collection so that I can use them by name.
+
+You can also destructure a map by providing a map as a parameter
+
+(defn x
+      [{lat :lat lng :lng}]
+      (println (str "Lat = " lat))
+      (println (str "Long = " lng)))
+
+(x {:lat 28.3 :lng 34.1})
+
+To just break keywords out of a map (just a different syntax)
+
+(defn x
+      [{:keys [lat lng]}]
+      ...)
+
+You can retain the original map reference using :as
+
+(defn x
+      [{:keys [lat lng] :as t}]
+      ...)              --> Then I can continue to referece t
+
+The Function Body
+-----------------
+Can contain any type or number of forms and automatically
+returns the last form evaluated.
+
+(defn x 
+      []
+      (+ 1 1)
+      "joe")
+
+(x) -> "joe"
+
+Remember that all functions are created equal!
+
+Anonymous Functions
+-------------------
+Anonymous functions are used extensively in Clojure.
+
+You may use them via two forms:
+(fn x) or #( % )
+
+The fn form works the same as defn with destructuring
+, rests, etc.
+
+(map (fn
+        [name])
+        (str "Hi, " name)
+        ["Jim" "Bob"])
+
+--> ("Hi, Jim" "Hi Bob")
+
+Ironically, you CAN name an anonymous function:
+
+(def x (fn [] (+ 1 1)))
+
+(x) -> 2
+
+(#(* % 3) 8) -> 24 :: % acts as a placeholder
+
+Recall that you can pass functions as arguments. Anonymous
+functions are useful here.
+
+(map #(str "Hi, " %)
+     ["Tim" "Joe"])
+
+--> ("Hi, Tim" "Hi, Joe")
+
+You can pass multiple arguments to anonymous tagged functions:
+
+(#(str %1 " and " %2) "Fire", "Ice")
+-> "Fire and Ice"
+
+And you can also use a rest parameter: %&
+(#(identity %&) 1 "balrg" :yip)
+-> (1 "balrg" :yip)
+                     :: Note the use of the identity function!
+
+Returning Functions
+-------------------
+Functions that are returned from functions are called closures,
+meaning that they themselves have access to all the variables that
+were in tthe scope when the function was created.
+
+(defn custom-incrementer
+      "This is a cool incrementer I made"
+      [inc-by]
+      #(+ % inc-by))
+
+(def inc3 (custom-incrementer 3))
+
+(inc3 7)
+-> 10
+
+Function Forms
+----------------------
+
+let
+---
+Let binds names to values in a new local scope
+
+(let [a 3] a) -> 3
+
+(let [dogs ["Spot" "Max"]] dogs)
+(dogs) -> ["Spot" "Max"]
+
+This allows us to avoid reusing variables at a global
+level, something that is evil.
+
+(def x 0)
+(let [x 1] x) -> 1
+
+But you CAN reference a higher order scope in let
+
+(def x 0)
+(let [x (inc x)] x) -> 1
+
+Let forms have two main uses:
+1. Providing clarity by naming things
+2. Evaluate an expression once and reuse the result
+
+Let is good when you need to call an expensive function
+and use its result more than once.
+
+When you need something done locally, use let.
+
+Loop
+----
+Provides another way to do recursion in Clojure.
+
+(loop [iteration 0]
+      (println (str "Iteration " iteration))
+      (if (> iteration 3)
+          (println "Bye!")
+          (recur (inc iteration))))
+
+You can perform recursion normally, but loop has
+much better performance.
+
+Regex
+-----
+The literal notation for a regex is
+
+#""
+
+(re-find #"^left-" "left-eye")
+
+Reduce
+------
+A built in function to process each element in a sequence into a result.
+
+(reduce + [1 2 3 4])
+-> 10
+
+reduce works by:
+1. Apply given function to first two elements of seqeunce
+2. Replace the head with the result
+3. Repeat steps 1 and 2 until empty
+
+reduce also takes an optional initial value. If it is specified,
+this initial value acts like the first item in the list.
+
+(reduce + 15 [1 2 3 4])
+-> 25
+
+Note that you can:
+-Pass a function instead of an operator to reduce
+-Pass reduce as a parameter to another function
+
+--------------------------------------------------------------------------------
+Core Functions In Depth
+-----------------------
+
+Of special note is Clojure's emphasis on the priciple of programming
+to abstractions. Clojure does not care what functionality lies inside
+a data structure but only if that data structure CAN be operated on by
+a set of abstract functions. In this way we can build custom data structures
+that can be treated by Clojure as something that it already knows how 
+to operate on, such as a sequence or a map.
+
+Indirection: a term that described how a name can have multiple yet
+related meanings.
+
+map
+---
+map applies a function across the given collections.
+
+(map inc (1)) -> 2
+
+map can take as many collections as arguments as the number of arguments
+in the given function can take. inc can only take 1 collection so we can
+only pass in one collection to map. Str can take an infinite number so
+we could pass in an infinite number of collections to map with str as its
+operative function.
+
+We can even pass map a collection of functions to apply to another function.
+
+(map #(% 1) [fn1 fn2 fn3]) -> Applies all three functions to the number 1
+
+We can use map to retrieve a value or a set of values from another map.
+
+(def names
+     [{:first "Bob" :second "Sagget"}
+      {:first "Jimmy" :second "Durango"}])
+(map :second names) -> ("Sagget" "Durango")
+
+reduce
+------
+reduce processes elements in a sequence.
+Whenever you want to derive a new value from a seqable data structure,
+reduce should be able to take care of it.
+
+(reduce fn coll)
+
+Another use is to transform a map's values in place,
+producing a new map.
+
+(reduce (fn [new-map [key val]]
+            (assoc new-map key (fn that changes the value)))
+            {}
+            {:a val :b val})
+
+Another use for reduce is to filter out keys from a map
+based on their value.
+
+(reduce (fn [new-map [key val]]
+            (if (> val 4)
+            (assoc new-map key val)
+            new-map))
+            {}
+            {:a 5
+             :b 3}) -> {:a 5}
+
+take, drop, take-while, and drop-while
+--------------------------------------
+
+take returns a list of the first n elements of a sequence
+(take x coll)
+
+drop removes the first n elements of a sequence and returns the
+sequence with those elements removed
+(drop n coll)
+
+take-while continues to take from a sequence for as long as
+the predicate function you pass it proves true
+
+(take-while predicate-function coll)
+
+drop-while continues to drop from a sequence for as long as
+the predicate function you pass it proves true
+
+(drop-while predicate-function coll)
+
+You can compose take-while and drop-while to make some
+very effective non-trivial filters.
+
+filter and some
+---------------
+filter returns all elements of a sequence that test true for
+the predicate function you pass it.
+
+(filter predicate-function coll)
+
+Remember that filter will process all data in the sequence and
+thus could possibly be innefficient in some cases.
+
+some returns the first value that tests true for some predicate
+function in a sequence. It returns nil if there are no elements
+that resolve to true.
+
+(some predicate-function coll)
+
+sort and sort-by
+----------------
+sort sorts the elements of a sequence in ascending order
+
+(sort [3 2 1]) -> (1 2 3)
+
+sort-by sorts using a given function as a transformer function
+
+(sort-by count ["aaa" "c" "bb"]) -> ("c" "bb" "aaa")
+
+concat
+------
+concat appends the members of one sequence to the end of another
+
+(concat [1 2] [3 4]) -> (1 2 3 4)
+
+Laziness
+--------
+--------
+
+Lazy Sequences
+--------------
+Lazy sequences are those whose members are not computed until
+called upon. The computation of a sequence's members is called
+realization. Laziness allows for definition of infinite
+sequences and also makes programs more efficient in general.
+
+time is a function that reports the elapsed time to run a
+function.
+
+Anything that implements seq is lazy, like map for instance.
+
+
+Whenever Clojure realizes an element it preemptively realizes
+the next few elements as well. This almost always results in
+better performance.
+
+Lazy sequences need only to be realized once. After, lookup
+is O(n).
+
+Infinite Sequences
+------------------
+Clojure comes with a few functions that create infinite seqs.
+
+repeat returns an infinite list of whatever argument you pass
+it. Its result can then be constrained and realized.
+
+repeat and repeatedly
+---------------------
+(repeat 1) -> (1 1 1 1)
+
+repeatedly calls the function passed to it an infinite number
+of times. The results of the functions can then be constrained.
+
+(take 3 (repeatedly #(fn [] (rand-int 10))))
+-> list of 3 random ints between 0 and 9
+
+cons returns a new list with an element appended to the given
+list
+
+The Collection Abstraction
+--------------------------
+Recall that all of Clojures core data stuctures take part in
+both the collection and sequence abstractions:
+vectors, maps, lists, and sets
+
+Whereas the sequence abstraction is about operating on members
+individually, the collection abstraction operates on data
+structures as a whole.
+
+Examples include: empty?, every?, and count.
+
+into
+----
+into is an extremely important function! Recall that seqs
+return an abstract seq rather than the original data structure.
+To convert back to the original data structure, you use into.
+
+Without into:
+(map identity {:x 1}) -> ([:x 1])
+
+(into {} (map identity {:x 1})) -> {:x 1}
+
+You can do this for any data structure:
+
+(into [] fn) :: convert the list into a vector
+(into #{} fn) :: convert the list into a set
+(into {} fn) :: convert the list into a map
+
+The first argument to into does not have to be empty! This
+is a useful way to merge collections:
+
+(into [1] '(2)) -> [1 2]
+
+Note also that the arguments can be of different types!
+
+conj
+----
+conj also adds elements to a collection but slightly differently
+
+(conj [0] [1]) -> [0 [1]]
+
+whereas
+
+(into [0] [1]) -> [0 1]
+
+Notice that the second argument to conj is always a scalar,
+a single non-collecive item.
+
+You can specify as many elements as you wish:
+
+(conj [0] 1 2 3 4) -> [0 1 2 3 4]
+
+(conj {:a 1} [:b 2]) -> {:a 1 :b 2}
+
+Defining custom conj's using into can be useful:
+
+(defn my-conj
+      [target & additions]
+      (into target additions))
+
+Function Functions
+------------------
+------------------
+
+Some functions in Clojure both accept AND return functions.
+
+apply
+-----
+apply explodes a seqable data structure so it can be passed
+a function that expects a rest parameter.
+
+For instance, using a singleton function on a vector will
+return the vector itself:
+
+(max [1 2 3]) -> [1 2 3]
+
+We can use apply to apply the singleton fuction to the seq
+within a single function:
+
+(apply max [1 2 3]) -> 3
+
+What is really happening here is that apply sends the seq as
+separate arguments to max: (max 1 2 3)
+
+partial
+-------
+partial takes a function and any number of arguments and
+returns a new function.
+
+When you call the returned function, it calls the original
+function with the original arguments and the new arguments.
+
+(def add10 (partial + 10))
+(add10 3) -> 13
+(add10 5) -> 15
+
+You want to use partials when you find that you are repeating
+the same combination of function and arguments in many
+different contexts.
+
+A useful pattern is to define a function that passes
+a key into a hashmap to return a value based on that
+defined function's context.
+
+(defn hashed
+      [key message]
+      (condp = key
+      :key1 (do something)
+      :key2 (do another thing)))
+
+(def do-always
+     (partial hashed key1))
+
+(do-always) -> result of (do something)
+
+complement
+----------
+complement negates the truthiness of a boolean function.
+This is useful for finding the remainder of a map or
+seq.
+
+(def not-y (complement test?))
+(defn getY
+      (y [y x y x]))
+(getY) -> [x x]
+
+--------------------------------------------------------------------
+Functional Programming
+--------------------------------------------------------------------
+
+Core competencies in Functional Programming:
+-What pure functions are and why they are useful
+-How to work with immtable data structures and why they are superior
+-How disentagling data and functions gives you more power and flexibility
+-Why it is powerful to program to a small set of abstractions
+
+Pure Functions
+--------------
+A pure function always meets two criteria:
+1. Referential Transparency: It always returns the same result given the same arguments
+2. It can not cause any side effects. No observable changes can be made outside of the
+function
+
+Impure Functions
+----------------
+Any function that manipulates data outside of the scope of the function is
+impure.
+
+Examples: Random number generation, file reading and writing
+
+Mutable state is acheived by and causes problems through allowing namespaces
+to associate with uncertain values. By eliminating the ability for names to
+reference variability, we impart certainty that namespaces may never fool
+us into believing that they descibe anything other than what they originally
+name.
+
+One method by which Clojure avoids state is preventing a programmer from
+associating a new value with a name without creating a new scope. Using
+scope locality we can temporarily treat some name differently but the name
+remains durable once that scope is left.
+
+For example:
+
+(def x "toot")
+(println x) -> toot
+
+(let [x "bloop"]
+     (println x)) -> bloop
+
+(println x) -> toot
+
+Clojure instead forces you to use recursion to enact processes over data.
+
+A Recursion Example
+-------------------
+
+(defn sum
+      ([vals] (sum vals 0)) //We overload the arity of the function to provide default values
+      ([vals accumulating-total] //The parameter specification for the function
+             (if (empty? vals) //A base case
+             accumulating-total //The default return value if base case is true
+             (sum (rest vals) (+ (first vals) accumulating-total))))) //Tail recursion on the operation
+
+Note that each recursive call to sum creates a new scope where names are bound to values rather than
+values to names.
+
+In Clojure, however, it is best to use the key work recur to accomplish recursion for performance
+reasons. This is an example of tail-call recursion.
+
+recur
+-----
+
+(defn sum
+      ([vals] (sum vals 0))
+      ([vals accumulating-total]
+         (if (empty? vals)
+             accumulating-total
+             (recur (rest vals) (+ (first vals) accumulating-total)))))
+
+Notice that essentially all that is happening is that the keyword recur is taking the place
+of the function name.
+
+Function Composition Over Attribute Mutation
+--------------------------------------------
+
+Function Composition
+--------------------
+Function Composition is the technique of combining the actions of functions so that the
+return values of one function is passed as an argument to another.
+
+Here is a rather useless example:
+
+(defn addOne
+      [x]
+      (+ x 1))
+
+(defn addTwo
+      [x]
+      (+ x (addOne 0) (addOne 0)))
+
+We are composing functions out of functions. Incredibly powerful!
+
+More Pure Functions
+-------------------
+
+comp
+----
+comp allows us to create a new function through the composition of any number of
+functions.
+
+((comp inc *) 2 3) -> 7
+
+Here, the last function is applied first:
+2 * 3 = 6
+Then the preceding functions in order:
+(inc 6) => 7
+
+Note that when using comp, the first function that is applied may take
+any number of arguments, where the preceding, the subsequently applied functions
+may only have a unary arity: one argument.
+
+comp can be used to map data into functions:
+
+(def fruit-basket
+     {:name "Basket"
+      :contents {:Apples 10
+                 :Pears 2
+                 :Oranges 3}})
+
+(def how-many-apples (comp :Apples :contents))
+(def how-many-pears (comp :Pears : contents))
+
+(how-many-apples fruit-basket) -> 10
+(how-many-pears fruit-basket) -> 2
+
+memoize
+-------
+Memoization is the implicit recording of values through function execution.
+This is possible in pure functions because they are referentially transparent:
+a function will always evaluate to the same result given the same arguments.
+
+These functions are equivalent:
+A: (+ 3 (+ 5 8))
+B: (+ 3 13)
+C: 16
+
+However, A takes longer to evaluate than B and B than C. 
+
+Clojure allows you to store the result of a function after it is evaluated at
+least once.
+
+(defn say-something
+      "Says what is passed to it after one second"
+      [x]
+      (Thread/sleep 1000)
+      x)
+
+(say-something "Hi") -> "Hi" after 1 second pause
+
+(say-something "Hi") -> "Hi" after 1 second pause
+
+(def say-something-now (memoize say-something))
+(say-something-now "Hi") -> "Hi" after 1 second pause
+
+(say-something-now "Hi") -> "Hi" immediately
+
+I am assuming this is accomplished by associating the evaluated function as a
+more concrete version of itself each time it is memoized.
+
+Memoization is useful for compuationally intensive calls or in network calls.
+
+---------------------------------------------------------------------------------
+Project Organization
+---------------------------------------------------------------------------------
+Namespaces
+----------
+Namespaces in Clojure maintain the associations between our identifiers and scope
+addresses.
+
+Namespaces contain maps between symbols (names) and vars (contents).
+
+In Clojure, every namespace is an object of type clojure.lang.namespace
+Because of this, you can interact with namespaces just like normal Clojure
+data structures.
+
+*ns* refers to the current namespace.
+
+You can get the name of the current namespace with (ns-name *ns*)
+
+In Clojure, the program is always IN a namespace but never more than one at a time.
+You may create as many namespaces as you want in Clojure.
+
+Symbols
+-------
+Symbols are datatypes within Clojure. We will touch on them more soon.
+
+When you give Clojure a symbol like map (functions are symbols), it finds the
+corresponding var in the current namespace, gets a shelf address, and retrieves that
+object from the shelf.
+
+If you just want to use the symbol itself, you have to quote it with '. Quoting a
+form in Clojure tells Clojure not to evaluate it but to treat it as data:
+
+inc -> #<core$inc clojure.core$inc@30132014>
+
+'inc -> inc
+
+(map inc [1 2]) -> (2 3)
+
+'(map inc [1 2]) -> (map inc (1 2))
+
+Summary of Namespaces and Symbols
+---------------------------------
+
+You may think of Clojure in terms of a library where:
+-Namespaces are shelves
+-Symbols are representative addresses that contain vars
+-vars are functions and or objects
+
+When you define functions you are addressing the function by naming it something
+and storing it within the current namespace, or shelf in the case of the library.
+
+Note that just like functions, namespaces can be composed. For instance, every
+namespace already has the namespace clojure.core in its scope. When you add functions,
+they will be added in your namespace but you name still reference those in the clojure.core
+namespace.
+
+Storing Objects with def
+------------------------
+def is the primary tool in Clojure for storing objects. It is often used under the hood of
+other functions.
+
+(def x [1 1])
+
+def -> [1 1]
+
+This tells Clojure:
+1. Update the current namespace's map with associations between x and the var
+2. Find a free storage shelf
+3. Store [1 1] on that shelf
+4. Write the address of the shelf on x
+5. Return the var x : #'user/x
+
+This is called interning a var.
+
+You can interact with this mapping in the namespace by using this to get the map:
+
+(ns-interns *ns*)
+
+Then you can use the get function to get a specific one out of it:
+
+(get (ns-interns *ns*) 'x) -> #'user/x
+
+You can use this to get a full map of the namespace:
+
+(ns-map *ns*)
+
+Note that #'user/great-books is the reader form of a var. We will touch on reader forms
+later.
+
+deref
+-----
+Use deref to get the objects that reader namespaces point to:
+
+(deref #'user/x) -> [1 1]
+
+But this is the same as using the symbol itself:
+
+x -> [1 1]
+
+Overrwriting symbols
+--------------------
+
+(def y 2)
+
+y -> 2
+
+(def y 3)
+
+y -> 3
+
+This is something called a name-collision. Like other types of collisions,
+they are generally bad. Luckily, Clojure allows you to create other namespaces
+to avoid these collisions.
+
+Creating and Switching to Namespaces
+------------------------------------
+------------------------------------
+
+There are three ways to create new namespaces in Clojure:
+1. The Function create-ns
+2. The Function in-ns
+3. The macro ns
+
+Recall that namespaces are always quoted with '.
+
+create-ns
+---------
+Creates a new namespace and returns it:
+(create-ns 'cheese) -> #<Namespace cheese>
+
+You will likely use this in-ns more
+
+in-ns
+-----
+Creates and enters a new namespace if it does not already exist:
+
+(in-ns cheese)
+cheese>
+
+Use in-ns to jump around between namespaces that already exist.
+
+Qualifying Literal Namespaces
+-----------------------------
+
+cheese.analysis=> (in-ns 'cheese.taxonomy)
+cheese.taxonomy=> (def cheddars ["mild" "medium" "strong"]
+cheese.taxonomy=> (in-ns 'cheese.analysis)
+
+At this point, if we call:
+cheddars
+we will get an exception because it is outside the namespace we are in.
+
+But I can qualify the function with its namespace to access it while in another:
+
+cheese.analysis=> cheese.taxonomy/cheddars -> ["mild" "medium" "strong"]
+
+------------------------------------------------------------------------------------
+Reading, Evaluationm, and Macros
+
+A Macro allows you to transform arbitrary expressions into valid syntax.
+
+An example of a Macro:
+
+(defmacro backwards
+  [form]
+  (reverse form))
+
+(backwards (" backwards" " am" "I" str))
+
+ => "I am backwards"
+
+Clojure's Evaluation Model
+--------------------------
+Lisps have a two phase system for evaluation: reading and evaluation.
+
+Clojure is homoiconic, meaning that the languate text has the same structure
+as its AST. This is powerful in that it means the AST is accessible during
+program execution, unlike compiled languages. Because ASTs are constructed
+from lists in Clojure, and Clojure is written in list sytax, it is possible
+to inject 'text', or S-expressions, into the evaluator with 'eval'.
+
+Reading
+-------
+When Clojure is executed, the Clojure syntax is fed into the Reader, which
+forms the corresponding data structures.
+
+One way to interact with the Reader is to use the read-string function:
+
+(read-string "(+ 1 2)") =>  (+ 1 2)
+
+Conceptually, reader forms are Clojure syntax delimeters:
+
+() -> List reader form
+str -> Symbol reader form
+[1 2] -> Vector reader form
+{} -> Map reader form
+
+Reader Macros
+-------------
+Reader Macros are sets of rules for transforming text into data structures.
+They allow you to represent data structures in a more compact way.
+
+(read-string "'(+ 1 2)") => (quote (+ 1 2))
+
+The Evaluator
+-------------
+The Evaluator is essentially a function that takes a data structure as an
+argument, processes it, and returns a result.
+
+Syntactic abstraction and the -> Macro
+--------------------------------------
+The -> macro lets you reorganize the function call order in a form. This
+is useful if you have convoluted or tricky functions.
+
+(defn read
+      "Read a resource into a string"
+      [path]
+      (read-string (slurp (clojure.java.io/resource path))))
+
+becomes
+
+(defn read
+      [path]
+      (-> path
+          clojure.java.io/resource path
+          slurp
+          read-string)
+
+This can be thought of as a pipeline of functions.
+
+--------------
+Writing Macros
+--------------
+Macro definitions look like function definitions.
+
+(defmacro infix
+          [infixed]
+          (list (second infix) (first infix) (last infix))
+
+A difference between functions and macros is that function arguments are
+fully evaluated before theyre passed to the function, whereas macros
+receive arguments as unevaluated data.
+
+Writing macros is all about building a list for Clojure to evaluate. Be
+careful about the difference between a symbol and its value.
+
+When writing macros, it is important to quote the parts of it that do
+not need to be evaluated.
+
+Here is a macro to print something and return its value:
+
+(defmacro my-print
+          [expression]
+          (list 'let ['result expression]
+                (list 'println 'result)
+                'result))
+
+Syntax Quoting
+--------------
+Syntax quoting returns unevaluated data structures.
+However, it also returns the fully qualified symbol,
+with the symbol's namespace included.
+
+'(+ 1 2) => (clojure.core/+ 1 2)
+
+Another difference is that you may also unquote forms
+using the tilde ~.
+
+`(+ 1 ~(inc 1)) => (clojure.core/+ 1 2)
+
+whereas
+
+`(+ 1 (inc 1)) => (clojure.core/+ 1 (clojure.core/inc 1))
+
+The purpose of Syntax Quoting is brevity and concise code:
+
+(list `+ 1 (inc 1)) => (+ 1 2)
+
+Using Syntax Quoting in a Macro
+-------------------------------
+Here is an example of a macro written with Syntax Quoting that
+is extremely precise
+
+(defmacro critic
+          [bad good]
+          `(do (println "This is bad code:"
+                        (quote ~bad)))
+               (println "This is good code:"
+                        (quote ~good)))
+
+In this case, we wrapped the entire expression in a quote and prevented
+the pieces of code in particular from being evaluated.
+
+In short, quoting prevents valid arbitrary data structures from being
+evaluated.
+
+Unquote Splicing
+----------------
+
+Consider:
+
+`(+ ~(list 1 2 3)) => (clojure.core/+ (1 2 3))
+
+But if you use unquote splicing you get:
+
+`(+ ~@(list 1 2 3)) => (clojure.core/+ 1 2 3)
+
+Things to watch out for with Macros
+-----------------------------------
+Variable Capture
+----------------
+Macros can mess with bindings. Bound variables can be overwritten in more
+local lexical scopes.
+
+-----------------------------------
+Concurrent and Parallel Programming
+-----------------------------------
+
+Concepts
+--------
+Managing Multiple Tasks vs. Executing Task Simultaneuosly
+---------------------------------------------------------
+Concurrency refers to managing more than one tast at the same time.
+Parallelism refers to executing more than one task at the same time.
+Blocking refers to the behavior of waiting for a task to finish.
+
+Clojure uses JVM threads to implement concurrency.
+
+Some dangers with threads
+-------------------------
+Reference Cell Overwriting: A single cell of memory can be overwritten by
+                            two threads.
+Mutual Exclusion: Two threads trying to write to the same cell can corrupt
+                  order.
+Deadlock: Threads expecting resources that never become available because
+          other threads are using them.
+
+Futures, Delays, and Promises
+-----------------------------
+These features can be used effectively to defend against Reference Cell Overwriting
+and Mutual Exclusion.
+
+Knowing when parallel or non parallel task are needed is essential.
+
+Futures
+-------
+You can use a future to define a task and place it on another thread without
+requiring the result immediately. You can forget about them if you would like
+but you can also use the result too. The future function returns a reference
+value that you can use to request the result.
+
+(future (Thread/sleep 4000))
+
+Requesting the future's result is called dereferencing the future. You can
+use the deref function or the @ reader macro.
+
+(let [result (future (println "This prints once")
+                     (+ 1 1))]
+     (println "deref: " (deref result))
+     (println "@: " @result))
+
+Dereferencing a future that has not finished will block the current thread of
+execution until it is finished.
+
+You may use the realized? function to interrogate the future to see if it is
+done running.
+
+Delays
+------
+
+Delays allow you to define a task without having to execute it or require the
+result immediately. You can create a delay using delay:
+
+(def jackson-5-delay
+     (delay (let [message "Just call my name and Ill be there"]
+             (println "First deref:" message)
+             message))
+
+You can either dereference it or use force to evaluate the delay:
+
+(force jackson-5-delay)
+       "First deref: Just call my name and Ill be there"
+       "Just call my name and Ill be there"
+
+Like futures, a delay is run only once and its result is cached.
+Subsequent dereferencing will return the message without printing
+anything:
+
+@jackson-5-delay
+        "Just call my name and Ill be there"
+
+Promises
+--------
+Promises allow you to express that you expect a result without having to
+define the task that should produce it or when that task should run.
+
+Create promises with promise and deliver a result to them using deliver.
+Dereference to obtain the result.
+
+(def my-promise (promise))
+(deliver my-promise (+ 1 2))
+@my-promise
+
+If you had tried to dereference my-promise without delivering a value,
+the program would block until a promise was delivered like futures and
+delays.
+
+One use for promises is to find the first satisfactory element in a
+collection of data. 
+
+You can also use promises to register callbacks:
+
+(let [wisdom (promise)]
+     (future (println "Here is some wisdom: " @wisdom)
+     (Thread/sleep 100)
+     (deliver wisdom "Whisper your way to success.")))
+
+The future here begins to execute immediately but blocks
+until it has a value delivered to wisdom. Once the value
+of delivered, the print line runs.
+
+---------------------
+Atoms, Refs, and Vars
+---------------------
+
+Atoms
+-----
+An atom reference type allows you to endow a succession of related
+values with an identity.
+
+(def fred (atom {:x 0 :y 0}))
+
+We say that this atom refers to the value {:x 0 :y 0}
+
+To get an atoms current state, you dereference it:
+
+@fred
+
+Dereferencing an atom will never block. Using atoms to refer to
+immutable data structures means that the data structured returned
+will not get altered by another thread.
+
+To update the atom so that it refers to a new state you use swap!.
+The value does not change but the reference type can be updated and
+assigned a new value.
+
+swap! receives an atom and a function as arguments. It applies the
+function to the atoms current state to produce a new value and then
+it updates the atom to refer to this new value. The new value is also
+returned.
+
+Here is how you might update the new map:
+
+(swap! fred
+       (fn [current-state]
+           (merge-with + current-state {:x 1})))
+                       => {:x 1 :y 0}
+
+Dereferencing will return the new state:
+
+The update-in function takes three arguments: a collection, a vector
+for identifying which value to update and a function to update that
+value.
+
+(update-in {:a {:b 3}} [:a :b] inc)
+           => {:a {:b 4}}
+
+You can use the function reset! to update an atom without checking its
+current value.
+
+(reset! x {:a 0 :b 0})
+
+In summary, atoms implement Clojure's concept of state. They allow you
+to endow a series of immutable values with an identity. You can also
+work with past states without fear of them mutating in place.
+
+Watches
+-------
+Watches allow to you check in on one of your references types.
+
+Validators allow you to restrict what states are allowable.
+
+You may register any number of watches with a reference type.
+
+Watch functions take four arguments: a key that you use for reporting,
+at atom for being watched, the state of the atom before its update and
+the state of the atom after its update.
+
+(defn shuffle-alert
+      [key watched old-state new-state]
+      (let [sph (shuffle-speed new-state)]
+           (if (> sph 5000)
+           (do
+                (println "Run!")
+                (println "This message presented by: " key))
+           (do  (println key " says things are okay")))))
+
+(add-watch fred :fred-shuffle-alert shuffle-alert)
+
+(swap! fred update-in [:percent-deteriorated] + 30)
+=> "Run!"
+=? "This message presented by: :fred-shuffle-alert
+
+Watches are essentially asychronous checks that 'watch' atomic
+values.
+
+Validators
+----------
+Validators let you specify what states are allowable for a reference.
+
+(defn in-range
+      [value]
+      (and (>= 0)
+           (<= 100))
+
+When you add a validator to a reference, the reference is modified so that
+whenever its updated, it will call this validator with the value returned
+from the update function as its argument. If the validator fails by returning
+false or throwing an exception, the reference wont change to point to the
+new value.
+
+You can attach a validator during atom creation:
+
+(def bobby
+     (atom
+       {:name "Bobby" :age 10}
+        :validator in-range))
+
+(swap! bobby update-in [:age] + 200)
+=> Throws invalid reference state
+
+Refs
+---- 
+
+Atoms are ideal for managing the state of indepdendent identities. However,
+sometimes we would like to express that an event should update the state
+of more than on identity simultaneously. This is where refs come in.
+
+A raw way to think about his is to say that perhaps we have one
+resource that is passed between holders and we need to express that a
+holder A has lost the resource and holder B has gained the resource
+simultaneously. The resource should never appear to belong to neither
+resource at once, nor both at once.
+
+Refs alow you to update the state of multiple identities using transaction
+semantics.
+
+You can dereference refs just like you can dereference atoms.
+
+You use alter to modify refs but you must use alter within a transaction.
+
+dosync initiates a transaction and defines its extent. To use it, place
+transactions in its body. 
+
+These transactions have three features:
+
+1. They are atomic, meaning that all refs are updated or none of them are
+2. They are consistent, meaning that the refs always appear to have valid
+   states.
+3. They are isolated, meaning that transactions behave as if they executed
+   serially. If two threads are simultaneously running transactions that
+   alter the same ref, one transaction will retry
+
+commute and alter
+-----------------
+The commute function allows you to update a refs state within a transaction
+just like alter.
+
+This is how alter behaves:
+1. Reach inside the transactioon and read the ref's current state
+2. Compare the current state to the state the ref started with within
+   the transaction.
+3. If the two differ, make the transaction retry.
+4. Otherwise, commit the altered ref state
+
+This is how commute behaves:
+1. Reach outside the transaction and read the ref's current state.
+2. Run the commute function again using the current state.
+3. Commit the result. 
+
+vars
+----
+Vars are associations between symbols and objects. You create new vars
+with def.
+
+You can dynamically bind them and alter their roots.
+
+Dynamic Bindings
+----------------
+You can create a dynamic var whose binding can be changes. This can be useful
+for creating a global name that should refer to different values in different
+contexts.
+
+To create a dynamic var, use the ^:dynamic symbol.
+
+(def ^:dynamic *notification-address* "dobby@elf.com")
+
+Notice that the name of the var is enclosed in asterisks, which are known as
+earmufs. This simply signals that it is a dynamic var.
+
+You can temporarily change the value of dynamic vars by using the binding
+function.
+
+(binding [*notification-address* "test@self.org"]
+         *notification-address*)
+
+Uses of Dynamic Vars
+--------------------
+Dynamic vars are most often used to name a resource that one or more
+functions target. Clojure comes with a lot of built in dynamic vars for
+this purpose. *out* is an example. It represents the standard output for
+print operations. You can rebind *out* to write to a file:
+
+(binding [*out* (clojure.java.io/writer "print-output")]
+         (println "I can jump high."))
+
+(slurp "print-output")
+       => I can jump high.
+
+Dynamic vars are a great way to specify a common resource while retaining
+the flexibility to change it on an ad hoc basis.
+
+Altering the Var Root
+---------------------
+When you create a new var, the initial value that you supply is its root.
+
+(def power-source "Hair")
+
+You can permanantly change the root value with the function alter-var-root.
+
+(alter-var-root #`power-source (fn [_] "7-eleven parking lot"))
+power-source
+        => 7-eleven parking lot
+
+However, you will rarely ever want to do this. It is counterproductive to
+the philosophy of Clojure. But there may be special situations where it
+is needed.
+
+Stateless Concurrency and Parallelism with pmap
+-----------------------------------------------
+Sometimes you will want to write concurrent processes that are completely
+independent of one another. Clojure is very good at this.
+
+One great function for this is pmap, which stands for parallel map. pmap
+handles the running of each applicant of the mapping functionh on a 
+separate thread.
+
+Because maps and pmaps are lazy, you can use dorun to realize them.
+
+-----------------------------------
+Concurrent Processes with core.asyc
+-----------------------------------
+
+Clojure's core.async library allows you to create muliple independent
+processes within a single program.
+
+Processes
+---------
+At the heart of core.async is the process, a concurrently running unit of
+logic that responds to events. 
+
+chan
+----
+The chan function creates a channel. 
+
+Channels communicate messages. You can put the message on the channel
+and take the messages off of it. Processes wait for the completion of
+put and take operations. These are the events that processes respond to.
+
+The go function creates a new process. Everything withing the go block
+runs concurrently on separate threads.
+
+The take function is represented as <! . It listends to the channel you
+give it as an argument and the process it belongs to waits until
+another process puts a message on the channel.
+
+The put function is represented as >!! . When you put a message on a
+channel, the process blocks until another process takes the message.
+
+Processes both wait to receive messages and also wait for mesages that
+they put on a channel to be taken.
+
+Processes dont have explicit knowledge of each other and act
+independently.
+
+Buffering
+---------
+
+You can create explicitly sized buffers of channels.
+
+(def echo-buffer (chan 2))
+(>!! echo-buffer "Ketchup") => true
+(>!! echo-buffer "Ketchup") => true
+(>!! echo-buffer "Ketchup") => Blocks because the channel buffer is full.
+
+You can create a sliding buffer with sliding-buffer whuch drops values in
+a FIFO manner.
+
+You can also create a dropping buffer that discards in a LIFO manner.
+
+Buffers are just elaborations on the core model: processes are independent
+and concurrently execute units of logic that respond to events.
+
+In short, you can create processes with go blocks and communicate events
+over channels.
+
+Blocking and Parking
+--------------------
+Waiting is a key concept in understanding how core.asycn works.
+
+We know now that put waits until another process takes from the same
+channel and visa versa.
+
+There are two variaties of waiting: parking and blocking.
+
+Blocking is where a thread stops execution until a task is complete.
+
+Parking frees up the thread so it can keep doing work whereas a blocking
+thread is useless because it is waiting to resume.
+
+These operators are imporant with blocking and taking within go blocks:
+
+Parking put: >!
+Parking take: <!
+Blocking put >!!
+Blocking take <!!
+
+thread
+------
+There are times when blocking is desirable. In this case you should
+use the thread function. thread creates a new thread and executes
+a process on that thread. thread returns a channel. When thread's
+process stops, the process's return value is put on that channel.
+
+alts!!
+------
+The alts!! function lets you use the results of the first successful
+channel operation among a collection of operations. It does not 
+touch the other channels in the thread pool.
+
+alts!! has a parking alternative that you can use inside go blocks:
+alts!.
+
+Process Pipelines
+-----------------
+Process pipelines are a way to avoid callback hell.
+
+All process pipelines are are looping processes connection through
+channels. Initial input data is passed into a string of functions.
+When each function is finished, it passes its result into the
+next function in line. In this way, we can use the power of pure
+functions to avoid state transfer. Data goes in, data goes out.
+
+-----------------------------------------------------------------
+Creating and Extending Abstractions with Multimethods, Protocols,
+and Records
+-----------------------------------------------------------------
+
+Multimethods
+------------
+Multimethods give you a direct and flexible way to introduce
+polymorphism into your code.
+
+Using multimethods, you associate a name with multiple implementations
+by defining a dispatching function, which produces dispaching values
+that are used to determine which method to use.
+
+In short, when a mulitmethod is called, the dispatching function will
+interrogate the arguments and send them to the right method.
+
+Here is an example of a multimethod that takes two arguments and
+returns a vector containing the type of each argument. It also
+defines an implementation of that method which will be called
+when each argument is a String:
+
+(ns user)
+(defmulti types (fn [x y] [(class x) (class y)]))
+(defmethod types [java.lang.String java.lang.String]
+  [x y]
+  "Two strings!")
+
+(types "String 1" "String 2")
+; => "Two strings!"
+
+More implementations of the types function could be implemented here.
+
+This is why they are called multimethods: they allow dispatch
+on multiple arguments.
+
+Protocols
+---------
+Where a multimethod is just one polymorphic operation, a protocol
+is a collection of one or more polymorphic operations. Protocol
+operations are called methods just like multimethod operations.
+
+Unlike multimethods, which perform dispatch on arbitrary values
+returned by a dispatching function, protocol methods are
+dispatched based on the type of the first argument.
+
+(ns data-psychology)
+    (defprotocol psychodynamics
+                 "Plumb the depths of your data types"
+                 (thoughts [x] "The datatype's innermost thoughts")
+                 (feelings-about [x] [x y] "Feelings about self or others"))
+
+By defining a protocol, youre defining an abstraction but you
+havent yet defined how that abstraction is implemented.
+
+At this point, the abstraction has been defined but not how
+that abstraction is implemented.
+
+You can fix this by using the extend-type function to implement
+the protocol.
+
+(extend-type java.lang.String
+             psychodynamics <- The protocol we are supporting
+             (thoughts (str x " toot"))
+             (feelings-about
+                ([x] (str x " bloop"))
+                ([x y] (str x " zoot" y))))
+
+(thoughts "blorb") => "blorb toot"
+(feelings-about "blorb") => "blorb bloop"
+(feelings about "blorb" "blap") => "blorb zoot blap"
+
+Note that you must implement each method in the protocol.
+
+You can alsouse extend-protocol which allows you to extend
+multiple types at once:
+
+(extend-protocol Psychodynamics
+  java.lang.String
+  (thoughts [x] "Truly, the character defines the data type")
+  (feelings-about
+    ([x] "longing for a simpler way of life")
+    ([x y] (str "envious of " y "'s simpler way of life")))
+  
+  java.lang.Object
+  (thoughts [x] "Maybe the Internet is just a vector for toxoplasmosis")
+  (feelings-about
+    ([x] "meh")
+    ([x y] (str "meh about " y))))
+
+Records
+-------
+Clojure allows you to create records, which are custom, maplike structures.
+They associate keys with values just like maps but you can specify fields
+for your records. Fields are slots for data; using them is like specifying
+which keys a data structure should have. You may also extend records to
+implement protocols.
+
+To create a record, just use defrecord to specify its name and fields:
+
+(ns were records)
+(defrecord WereWolf [name title])
+
+We can now do several things with this record:
+
+1. Create an instance the same way we might in Java:
+
+   (WereWolf. "David" "London Tourist")
+
+2. Create a function:
+  
+   (->WereWolf "Jacob" "Lead Shirt Discarder")
+
+3. Create a function that takes a map as an argument with keywords that
+   correspond to the record types field and returns a record:
+
+   (map->WereWolf {:name "Lucian" :title "CEO of Melodrama"})
+
+You can import a record into other namespaces but you must replace the
+dashes with underscores:
+
+       (ns monster-mash
+          (:import [were_records WereWolf]))
+       (WereWolf. "David" "London Tourist")
+
+Records can be operated on in the same way that maps are operated on.
+
+Records can implement protocols too.
+
+In general, you should consider using records instead of maps of you
+find yourself creating maps with the same fields over and over. This
+tells you that that set of data represents information in your
+application's domain and your code will communicate its purpose
+better if you provide a name based on a concept that you are trying
+to model. Records are also more performant than maps. You may also
+use protocols with records.
+

@@ -1,0 +1,251 @@
+Clojure for Java Programmers -Rich Hickey
+----------------------------
+
+General
+-------
+- Clojure is a dynamically typed Lisp
+- Hosted on the JVM
+- Focused on concurrency and immutability
+- Dynamic languages are more concise
+- Unmatched performance in terms of dynamic languages
+- Very extensible
+- Code is data
+- Compiling happens all the time
+- The runtime of Clojure is a program behind your program
+- Deemphasizes identity. Equality of value is the only thing that matters.
+- Your environment is your program
+- There are namespaces in Clojure
+- Macros ARE function but are denoted differently, and thus treated differently
+- All expressions are bound
+
+
+Atomics
+-------
+- All numbers are boxed
+- You have ratios - first class item
+- nil means nothing, same value as java null
+
+Data Structure
+---------------
+All collections can be heterogeneous
+
+- Lists: Singly linked list where things are ALWAYS added at the front
+    Literal representation is anything in parentheses
+
+- Vector: Like an array. Supports efficient accussure. Constant time
+  addition of end elements
+
+- Map: Associative data structure. Default maps are equivalent to
+  hashtables. Very fast.
+
+- Set: Set of unique values. With this I can really only tell you if
+    a value is present. Always hash sets. Order is not retained.
+
+- Everything can nest. Vector of Vectors etc. Pairs of things as keys
+  is acceptable. Very handy!
+
+Syntax
+---------
+- You've seen it!
+- The structure of the program IS the composistion of its data structures
+- This makes programs executable as a data structure
+- There is nothing else
+
+Evaluation
+------------
+Components:
+-Code Test -> Reader -> evaluator/compiler -> JVM -> Machine
+
+Products:
+- Characters -> Data structures > bytecode -> effect
+
+Expressions
+-----------
+- Everything is an expression; everything is evaluatable
+- All data literals (symbols) represent themselves
+  -Except for
+    -Lists
+      -An operation form
+    -Symbols
+      -looks for a binding to the value, a name. Looks locally and then globally
+        -let = create local name
+        -def = create global name
+
+Operation Forms
+----------------
+
+(op ....)
+op can be either
+- a special op
+- A macro, a way to register with the compiler to be run
+- Expression which yields a function
+
+Special Ops
+------------
+- Can have non-normal evaluation of arguments.
+- There are very few
+- You can define most of these in terms of themselves
+- (def nam value-expr)
+  -establishes a global
+    -does not evaluate the symbol!
+- (if expression then-expr else-expr)
+  -Will only evaluate only one of the then/else
+
+Macros
+-----------
+- Supplied with Clojure but defined by the user
+- Argument forms are passed as data to the macro function.
+- The macro function returns a new data scructure as a replacement
+  for the macro call
+  -Give me back the data structure I should be processing
+  -The macro is handed the data structure x
+  -It will run any arbitrary program to transform x into y
+  -Where y is some desired transformation of x
+-A well written macro will ensure it is only run once. This mitigates
+side effects:
+
+:: A simple macro
+---------------------
+(or x y)
+
+becomes:
+
+(let [or__158 x]
+  (if or__158 or__158 y))
+-------------------------
+  what is __158??
+
+-You can write your own Macros!
+-When you fix a macro you fix EVERY INSTANCE of that macro
+
+Functions
+---------
+- Functions are first class values: values like any other
+  (def five 5)
+- fn is a special operator. It takes a vector of the names of its arguments
+  -fns can be called
+
+(def five 5)
+(def sqr (fn [x] ))
+
+- Maps are functions of their key. Any collection is a function of its entries
+
+Syntax Summary
+---------------
+- Declarations, control structures, function calls, and operators are
+  ALL just lists with op as the first entry
+
+Sequences
+--------------
+In a Lisp abstraction:
+
+(seq coll) == "Give me a sequence like thing from a collection type thing"
+  returns nil if there is nothing. Lisp returns logical false. So to check if the
+  list is empty we can use an if(seq)
+
+(first seq) == "Give me the first thing in that sequence"
+
+(rest seq) == "Give me the rest of the things in that sequence"
+  Means the rest of the seq MINUS the first
+
+We can use these as a base to build libraries that AVOID loops
+
+(drop 2 [1 2 3 4 5]) -> [3 4 5]
+
+(take 9 (cycle [1 2 3 4 5])) -> [1 2 3 4 5 1 2 3 4]
+**cycle is an example of a lazy function. The infiniteness is bound by the parameters
+
+(interleave [:a :b :c :d :e] [1 2 3 4 5]) -> (:a 1 :b 2 :c 3 :d 4 :e 5)
+
+(partition 3 [1 2 3 4 5 6 7 8 9]) -> ((1 2 3) (4 5 6) (7 8 9))
+
+(map vector [:a :b :c :d :e] [1 2 3 4 5]) -> ([:a 1] [:b 2] [:c 3] [:d 4] [:e 5])
+**Take this function called vector and apply it across the sequences I provide
+
+(apply str (interpose \, "asdf")) -> "a,s,d,f"
+**str is an arbitrary name here
+
+(reduce + (range 100)) -> 4950
+**Reduce is a function that takes a function. On a finite list, apply the function
+successively using the result of the previous application as an argument.
+
+nil + 1 = 1
+1 + 2 = 3
+3 + 3 = 6
+6 + 4 = 10
+... until we reach 100
+
+**This function seems important!
+
+Java Interop
+-------------
+. is a special character
+**It says "The stuff after me is Java"
+
+(. Math PI) = 3.1459
+**Notice how it literally reads like imperative Java : Math.PI (Pretty cool!!)
+
+(.. System getProperties (get "java.version")) (Nifty!!) (The .. is a simple macro!)
+
+(new Java.util.Date) -> Todays date
+**Notice the lack of java perens!
+
+(doto (JFrame.) (add (JLabel. "Hello")) pack show) (doto is a macro!!)
+**doto does: do to this thing, all the other things
+
+Java Integration
+----------------
+You can extent Clojure very easily.
+
+Clojure likes interfaces and empasizes the creation and usages therof
+
+Primitive support equals the speed of Java.
+
+Clojure is the fastest of lisps
+
+Clojure functions are java runnables! You can pass them to run frameworks
+
+Functional Programming
+----------------------
+Side effect free functions
+No side effects ANYWHERE.
+
+Every function is a function composed of other functions and parameters
+
+Data Immutability
+-----------------
+Copying is NOT practical
+Manipulation is not equivalent to mutation
+
+Why Functional
+--------------
+It makes your program BETTER
+You dont have to look everywhere to figure out what things do
+Almost essential for concurrency
+
+  Concurrency demands immutability so why allow any of it in the language youre using?
+
+Persistent Data Structures
+--------------------------
+Persistence here means "The collection is immutable"
+
+"When you produce a new verysion of a collection the old one is still available"
+"All performance characteristics are equivalent between old versions and new"
+
+How do we produce a new vector comprised of an old vector without having to
+copy or reiterate over every item?
+
+The new version has to share some structure with the old version.
+Called "Structural Sharing"
+
+Implemented with Red Black trees.
+
+Since everything is immutable, nothing can corrupt anything else,
+they are thread safe and type safe.
+
+It works by tree path copying. (VERY INTERSETING STUFF)
+
+ALL CLOJURE COLLECTIONS HAVE ALL OF THESE PROPERTIES
+
+Concurrency
+-----------
